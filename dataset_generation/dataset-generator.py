@@ -58,28 +58,40 @@ write_lock = threading.Lock()
 
 def process_sample(index):
     """Process a single sample and write to file"""
-    sample, error_msg = generate_sample(index)
-    
-    if error_msg:
-        return error_msg
-    
-    with write_lock:
-        with open(Config.OUTPUT_FILE, "a") as f:
-            f.write(sample + "\n")
-    
-    return None
+    try:
+        sample, error_msg = generate_sample(index)
+        
+        if error_msg:
+            return error_msg
+        
+        with write_lock:
+            with open(Config.OUTPUT_FILE, "a") as f:
+                f.write(sample + "\n")
+        
+        return None
+    except Exception as e:
+        # Ignore any error and continue generation
+        return f"Exception in process_sample for sample {index}: {e}"
 
 with open(Config.OUTPUT_FILE, "w") as f:
     pass  
 
-with ThreadPoolExecutor(max_workers=Config.MAX_WORKERS) as executor:
-    futures = {executor.submit(process_sample, i): i for i in range(Config.NUM_SAMPLES)}
-    
-    with tqdm(total=Config.NUM_SAMPLES, desc="Generating samples") as pbar:
-        for future in as_completed(futures):
-            error_msg = future.result()
-            if error_msg:
-                print(error_msg)
-            pbar.update(1)
+try:
+    with ThreadPoolExecutor(max_workers=Config.MAX_WORKERS) as executor:
+        futures = {executor.submit(process_sample, i): i for i in range(Config.NUM_SAMPLES)}
+        
+        with tqdm(total=Config.NUM_SAMPLES, desc="Generating samples") as pbar:
+            for future in as_completed(futures):
+                try:
+                    error_msg = future.result()
+                    if error_msg:
+                        print(error_msg)
+                except Exception as e:
+                    print(f"Exception occurred during sample generation: {e}")
+                    # Continue to next future
+                pbar.update(1)
+except Exception as e:
+    print(f"Top-level exception occurred: {e}")
+    # Ignore and allow script to finish/continue
 
 print(f"Dataset saved to {Config.OUTPUT_FILE}")
