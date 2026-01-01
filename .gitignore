@@ -1,0 +1,3 @@
+.env
+venv/
+dataset_generation/__pycache__/
