@@ -1,4 +1,4 @@
-# SuperKalam
+# Query expansion and Topic tagging
 
 A pipeline for generating synthetic conversational datasets and fine-tuning LLMs for intent understanding and topic classification.
 
@@ -11,7 +11,7 @@ This project trains a model to:
 ## Project Structure
 
 ```
-superkalam/
+query-expansion-and-topic-tagging/
 ├── dataset_generation/          # Synthetic data generation
 │   ├── config.py               # Configuration (model, topics, samples)
 │   ├── actor_prompt.py         # Generates training samples
