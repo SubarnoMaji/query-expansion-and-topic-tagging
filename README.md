@@ -37,17 +37,6 @@ cd dataset_generation
 python dataset-generator.py
 ```
 
-## Setup
-
-```bash
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install langchain-google-genai python-dotenv tqdm
-
-# Add your API key
-echo "GOOGLE_API_KEY=your_key_here" > .env
-```
-
 ## Model Training
 
 Fine-tuning is done using [Unsloth](https://github.com/unslothai/unsloth) on Qwen models. See `qwen-finetune-unsloth/training-notebook/` for notebooks.
