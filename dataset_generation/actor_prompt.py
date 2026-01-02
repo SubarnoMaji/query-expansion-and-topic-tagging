@@ -39,6 +39,24 @@ Include intent, expanded query, and hierarchical topic labels.
 
 Return STRICT JSON ONLY in this format:
 
+Query Expansion Rules
+
+You must rewrite the user’s latest query into a fully explicit, standalone question by resolving:
+Pronouns (he, she, his, her, they)
+Ellipsis (“what about…”, “and UK?”, “same for him”)
+Implicit references to earlier entities, countries, roles, or topics
+
+Expansion Guidelines:
+Preserve the user’s original intent 
+Inject missing entities from prior dialogue only if clearly implied
+Do not hallucinate new entities
+If the query is already self-contained, return it unchanged
+If the user intent is unclear, return the best minimal expansion
+The expanded query must preserve the original grammatical person and sentence form used by the user.
+If the user asks a question, the expansion must remain a question
+If the user uses imperative or fragment form, preserve it
+
+
 {{
   "messages": [
     {{"role": "user", "content": "..."}},
