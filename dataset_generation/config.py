@@ -1,6 +1,6 @@
 class Config:
     MODEL_NAME = "gemini-2.5-flash"
-    NUM_SAMPLES = 500
+    NUM_SAMPLES = 2
     MAX_WORKERS = 5
     OUTPUT_FILE = "synthetic_sft_dataset.jsonl"
 

@@ -5,9 +5,14 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from config import Config
 from actor_prompt import generate_actor_prompt
+from critic_prompt import generate_critic_prompt
 import threading
 
 load_dotenv()
+
+# Counters for tracking critic rejections
+critic_stats = {"approved": 0, "rejected": 0}
+stats_lock = threading.Lock()
 
 thread_local = threading.local()
 
@@ -22,15 +27,37 @@ def get_model():
 
 def clean_content(content):
     if content.startswith("```json"):
-        content = content[7:] 
+        content = content[7:]
     elif content.startswith("```"):
-        content = content[3:] 
+        content = content[3:]
     if content.endswith("```"):
-        content = content[:-3] 
+        content = content[:-3]
     return content.strip()
 
+
+def evaluate_with_critic(sample: str) -> tuple[bool, str]:
+    """
+    Use the critic to evaluate if a generated sample is good enough.
+    Returns (approved: bool, reason: str)
+    """
+    try:
+        model = get_model()
+        critic_prompt = generate_critic_prompt(sample)
+        response = model.invoke(critic_prompt)
+        content = clean_content(response.content.strip())
+
+        result = json.loads(content)
+        approved = result.get("approved", False)
+        reason = result.get("reason", "Unknown")
+
+        return approved, reason
+    except Exception as e:
+        # If critic fails, approve by default to not block generation
+        return True, f"Critic error (auto-approved): {e}"
+
+
 def generate_sample(index):
-    """Generate a single sample with error handling"""
+    """Generate a single sample with error handling and critic validation"""
     try:
         model = get_model()
         response = model.invoke(
@@ -38,12 +65,25 @@ def generate_sample(index):
         )
         content = response.content.strip()
         cleaned = clean_content(content)
-        
+
         if not cleaned or not cleaned.strip():
             return None, f"Skipped sample {index}: empty response."
-        
+
         # Validate JSON
         json.loads(cleaned)
+
+        # Critic evaluation
+        approved, reason = evaluate_with_critic(cleaned)
+
+        with stats_lock:
+            if approved:
+                critic_stats["approved"] += 1
+            else:
+                critic_stats["rejected"] += 1
+
+        if not approved:
+            return None, f"Rejected sample {index} by critic: {reason}"
+
         return cleaned, None
     except ValueError as e:
         if "contents are required" in str(e):
@@ -60,26 +100,26 @@ def process_sample(index):
     """Process a single sample and write to file"""
     try:
         sample, error_msg = generate_sample(index)
-        
+
         if error_msg:
             return error_msg
-        
+
         with write_lock:
             with open(Config.OUTPUT_FILE, "a") as f:
                 f.write(sample + "\n")
-        
+
         return None
     except Exception as e:
         # Ignore any error and continue generation
         return f"Exception in process_sample for sample {index}: {e}"
 
 with open(Config.OUTPUT_FILE, "w") as f:
-    pass  
+    pass
 
 try:
     with ThreadPoolExecutor(max_workers=Config.MAX_WORKERS) as executor:
         futures = {executor.submit(process_sample, i): i for i in range(Config.NUM_SAMPLES)}
-        
+
         with tqdm(total=Config.NUM_SAMPLES, desc="Generating samples") as pbar:
             for future in as_completed(futures):
                 try:
@@ -95,3 +135,4 @@ except Exception as e:
     # Ignore and allow script to finish/continue
 
 print(f"Dataset saved to {Config.OUTPUT_FILE}")
+print(f"Critic stats - Approved: {critic_stats['approved']}, Rejected: {critic_stats['rejected']}")
