@@ -37,20 +37,6 @@ cd dataset_generation
 python dataset-generator.py
 ```
 
-## Topic Hierarchy
-
-| Level 1 | Level 2 |
-|---------|---------|
-| Politics | India, UK, USA, China, Russia, Global |
-| Sports | Cricket, Football, Basketball, Tennis, Olympics |
-| Technology | AI, ML, Software Dev, Cybersecurity, Blockchain |
-| Business | Startups, Finance, Stock Market, Economy, E-commerce |
-| Entertainment | Movies, TV Shows, Music, Celebrities, OTT |
-| Science | Physics, Biology, Space, Climate, Research |
-| Health | Fitness, Nutrition, Mental Health, Diseases, Medicine |
-| Education | Exams, Universities, Online Courses, Careers, Research |
-| General | Chitchat, Greetings, Meta, Clarification, Other |
-
 ## Setup
 
 ```bash
