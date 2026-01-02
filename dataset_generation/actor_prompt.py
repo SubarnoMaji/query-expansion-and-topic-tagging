@@ -33,12 +33,6 @@ level_2: "{selected_level_2}"
 Here is the full topic hierarchy for your reference:
 {topic_desc}
 
-Make sure your JSON uses ONLY the provided topics above for "level_1" and "level_2".
-
-Include intent, expanded query, and hierarchical topic labels.
-
-Return STRICT JSON ONLY in this format:
-
 Query Expansion Rules
 
 You must rewrite the user’s latest query into a fully explicit, standalone question by resolving:
@@ -56,6 +50,9 @@ The expanded query must preserve the original grammatical person and sentence fo
 If the user asks a question, the expansion must remain a question
 If the user uses imperative or fragment form, preserve it
 
+Make sure your JSON uses ONLY the provided topics above for "level_1" and "level_2".
+
+Include intent, expanded query, and hierarchical topic labels.
 
 {{
   "messages": [
