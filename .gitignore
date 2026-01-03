@@ -6,3 +6,4 @@ dataset_generation/synthetic_sft_dataset.jsonl
 dataset_generation/dataset
 frontend/node_modules
 modal-deployment/__pycache__/
+secrets.toml
