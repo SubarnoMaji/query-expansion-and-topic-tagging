@@ -69,8 +69,9 @@ def generate_sample(index):
         if not cleaned or not cleaned.strip():
             return None, f"Skipped sample {index}: empty response."
 
-        # Validate JSON
-        json.loads(cleaned)
+        # Validate JSON and compact it to single line for JSONL format
+        parsed = json.loads(cleaned)
+        cleaned = json.dumps(parsed, ensure_ascii=False)
 
         # Critic evaluation
         approved, reason = evaluate_with_critic(cleaned)
