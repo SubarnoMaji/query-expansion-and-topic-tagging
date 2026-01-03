@@ -4,3 +4,5 @@ dataset_generation/__pycache__/
 stone-column-425217-n6-f4d23a960b0f.json
 dataset_generation/synthetic_sft_dataset.jsonl
 dataset_generation/dataset
+frontend/node_modules
+modal-deployment/__pycache__/
