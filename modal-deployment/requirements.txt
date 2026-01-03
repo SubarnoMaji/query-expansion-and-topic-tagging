@@ -5,3 +5,4 @@ datasets
 sentencepiece
 peft
 bitsandbytes
+unsloth_zoo

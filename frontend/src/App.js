@@ -1,13 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 function App() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: 'assistant',
-      content: "Hello! How can I help you with your UPSC preparation today? Do you have any questions about the exam, strategy, or any specific topics you're studying?"
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -28,7 +22,7 @@ function App() {
     setInput('');
     setIsLoading(true);
 
-    // Get analysis for the user message
+    // Get analysis for the user message (using mock functions)
     const analysis = {
       expanded_query: getMockExpandedQuery(userMessage, messages),
       topic: getMockTopic(userMessage)
@@ -45,40 +39,67 @@ function App() {
     setMessages(prev => [...prev, newUserMessage]);
 
     try {
-      // Call backend API for analysis
-      const response = await fetchAnalysis([...messages, newUserMessage]);
-
-      // Add assistant response if provided
-      if (response.assistant_response) {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          role: 'assistant',
-          content: response.assistant_response
-        }]);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      // Add mock assistant response
+      // Call Gemini API for assistant response
+      const assistantResponse = await getGeminiResponse([...messages, newUserMessage]);
+      
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: getMockAssistantResponse(userMessage)
+        content: assistantResponse,
+        analysis: null
+      }]);
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      // Fallback to mock response if Gemini API fails
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: "I apologize, but I'm having trouble connecting right now. Please check your API key configuration.",
+        analysis: null
       }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mock function - replace with actual API call
-  const fetchAnalysis = async (conversationHistory) => {
-    const response = await fetch('http://localhost:8000/analyze', {
+  // Call Gemini API for assistant responses
+  const getGeminiResponse = async (conversationHistory) => {
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured. Please set REACT_APP_GEMINI_API_KEY in your .env file');
+    }
+
+    // Format conversation history for Gemini API
+    const contents = conversationHistory.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: conversationHistory })
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: contents
+      })
     });
 
-    if (!response.ok) throw new Error('API error');
-    return response.json();
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    
+    throw new Error('Invalid response format from Gemini API');
   };
 
   // Mock functions for demo without backend
@@ -110,33 +131,36 @@ function App() {
     return { level_1: 'General', level_2: 'Chitchat' };
   };
 
-  const getMockAssistantResponse = (query) => {
-    return "I understand your question. Let me help you with that. This is a demo response - connect the backend for real responses.";
-  };
 
   const clearChat = () => {
-    setMessages([
-      {
-        id: 1,
-        role: 'assistant',
-        content: "Hello! How can I help you with your UPSC preparation today? Do you have any questions about the exam, strategy, or any specific topics you're studying?"
-      }
-    ]);
+    setMessages([]);
   };
 
   return (
     <div className="app">
-      {/* Header */}
-      <div className="header">
-        <h1>Query Expansion and Topic Tagging</h1>
-        <button className="clear-chat-btn" onClick={clearChat}>
-          Clear Chat
-        </button>
-      </div>
+      <header className="header">
+        <h1>Query Expansion & Topic Tagging</h1>
+        <p>Chat interface with real-time query analysis</p>
+        <button className="clear-btn" onClick={clearChat}>Clear Chat</button>
+      </header>
 
-      {/* Chat Messages */}
-      <div className="chat-container">
+      <main className="chat-container">
         <div className="messages">
+          {messages.length === 0 && (
+            <div className="welcome-message">
+              <h2>Welcome!</h2>
+              <p>Start a conversation to see query expansion and topic classification in action.</p>
+              <div className="example-queries">
+                <p><strong>Try asking:</strong></p>
+                <ul>
+                  <li>"Tell me about the latest Marvel movie"</li>
+                  <li>"Who scored the winning goal?" (after discussing football)</li>
+                  <li>"What about him?" (after mentioning a person)</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
           {messages.map((message) => (
             <div key={message.id} className={`message-row ${message.role}`}>
               {message.role === 'user' && message.analysis && (
@@ -190,25 +214,23 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
-        <form className="input-bar" onSubmit={handleSubmit}>
+        <form className="input-form" onSubmit={handleSubmit}>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me anything"
+            placeholder="Type your message..."
             disabled={isLoading}
-            className="chat-input"
           />
-          <button 
-            type="submit" 
-            className="attach-btn"
-            disabled={isLoading || !input.trim()}
-          >
-            +
+          <button type="submit" disabled={isLoading || !input.trim()}>
+            Send
           </button>
         </form>
-      </div>
+      </main>
+
+      <footer className="footer">
+        <p>Query Expansion & Topic Tagging Demo</p>
+      </footer>
     </div>
   );
 }
