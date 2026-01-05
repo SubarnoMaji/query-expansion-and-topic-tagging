@@ -73,17 +73,22 @@ def generate_sample(index):
         parsed = json.loads(cleaned)
         cleaned = json.dumps(parsed, ensure_ascii=False)
 
-        # Critic evaluation
-        approved, reason = evaluate_with_critic(cleaned)
+        # Critic evaluation (only if enabled)
+        if Config.USE_CRITIC:
+            approved, reason = evaluate_with_critic(cleaned)
 
-        with stats_lock:
-            if approved:
+            with stats_lock:
+                if approved:
+                    critic_stats["approved"] += 1
+                else:
+                    critic_stats["rejected"] += 1
+
+            if not approved:
+                return None, f"Rejected sample {index} by critic: {reason}"
+        else:
+            # If critic is disabled, auto-approve and count as approved
+            with stats_lock:
                 critic_stats["approved"] += 1
-            else:
-                critic_stats["rejected"] += 1
-
-        if not approved:
-            return None, f"Rejected sample {index} by critic: {reason}"
 
         return cleaned, None
     except ValueError as e:
@@ -136,4 +141,7 @@ except Exception as e:
     # Ignore and allow script to finish/continue
 
 print(f"Dataset saved to {Config.OUTPUT_FILE}")
-print(f"Critic stats - Approved: {critic_stats['approved']}, Rejected: {critic_stats['rejected']}")
+if Config.USE_CRITIC:
+    print(f"Critic stats - Approved: {critic_stats['approved']}, Rejected: {critic_stats['rejected']}")
+else:
+    print(f"Critic disabled - All {critic_stats['approved']} samples approved automatically")

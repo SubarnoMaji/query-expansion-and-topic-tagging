@@ -23,7 +23,7 @@ You are an expert data generator for training an AI model on conversational inte
 
 Generate ONE high-quality training example with the following requirements:
 
-1. The conversation must have 4–8 turns (user and assistant).
+1. The conversation must have only 1 turn (user only).
 2. The final user message should be ambiguous or referential.
 3. The domain must be realistic and must use the following topics:
 

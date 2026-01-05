@@ -1,8 +1,9 @@
 class Config:
     MODEL_NAME = "gemini-2.5-flash"
-    NUM_SAMPLES = 2
+    NUM_SAMPLES = 50
     MAX_WORKERS = 5
     OUTPUT_FILE = "synthetic_sft_dataset.jsonl"
+    USE_CRITIC = False  # Toggle to enable/disable critic step
 
     TOPIC_HIERARCHY = {
         "Politics": [

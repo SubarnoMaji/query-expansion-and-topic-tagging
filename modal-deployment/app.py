@@ -156,11 +156,11 @@ class QueryExpansionService:
 
         # ---- Config ----
         base_model_name = "unsloth/Qwen2.5-7B-bnb-4bit"
-        adapter_hub_repo = "subarnoM/query-expansion-and-topic-tagging"
+        adapter_hub_repo = "subarnoM/qwen-tagging-query"
         max_seq_length = 2048
 
         # ---- Load base model ----
-        self.model, self.tokenizer = FastLanguageModel.from_pretrained(
+        self.model, base_tokenizer = FastLanguageModel.from_pretrained(
             model_name=base_model_name,
             max_seq_length=max_seq_length,
             dtype=torch.float16,
@@ -176,9 +176,19 @@ class QueryExpansionService:
             low_cpu_mem_usage=False,
         )
 
+        # ---- Load tokenizer from adapter repo ----
+        from transformers import AutoTokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            adapter_hub_repo,
+            cache_dir=MODEL_DIR,
+        )
+        # Use base tokenizer's pad_token if adapter tokenizer doesn't have one
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = base_tokenizer.pad_token or self.tokenizer.eos_token
+
         self.model.eval()
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        print("[INFO] Model loaded successfully")
+        print("[INFO] Model and tokenizer loaded successfully")
 
     @modal.method()
     def infer(self, messages: list = None, max_new_tokens: int = 256):
